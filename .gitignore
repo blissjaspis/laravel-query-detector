@@ -1,0 +1,10 @@
+build
+composer.lock
+vendor
+coverage
+.idea
+/.fleet
+/.vscode
+nbproject
+.phpunit.result.cache
+.DS_STORE
