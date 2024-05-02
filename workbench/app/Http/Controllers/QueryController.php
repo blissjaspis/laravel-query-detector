@@ -15,8 +15,6 @@ class QueryController
         foreach ($authors as $author) {
             $author->profile;
         }
-
-        return response('masuk');
     }
 
     public function notNPlusQuery()
@@ -26,8 +24,6 @@ class QueryController
         foreach ($authors as $author) {
             $author->profile;
         }
-
-        return response('masuk');
     }
 
     public function nPlusQueryFromBuilder()
@@ -38,8 +34,6 @@ class QueryController
             $author->profile;
             $author->posts()->where(1)->get();
         }
-
-        return response('masuk');
     }
 
     public function detectAllNPlusQuery()
@@ -54,8 +48,6 @@ class QueryController
         foreach (Post::all() as $post) {
             $post->author;
         }
-
-        return response('masuk');
     }
 
     public function detectNPlusQueryOnMorphRelation()
@@ -63,8 +55,6 @@ class QueryController
         foreach (Post::all() as $post) {
             $post->comments;
         }
-
-        return response('masuk');
     }
 
     public function detectNPlusQueryOnMorphRelationWithBuilder()
@@ -72,8 +62,6 @@ class QueryController
         foreach (Post::all() as $post) {
             $post->comments()->get();
         }
-
-        return response('masuk');
     }
 
     public function nPlusQueryIgnoresRedirects()
