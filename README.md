@@ -10,7 +10,8 @@ The Laravel N+1 query detector helps you to increase your application's performa
 This repository is a fork of [beyondcode/laravel-query-detector](https://github.com/beyondcode/laravel-query-detector). Why forked? The fork was created because the original package hadn't been updated to support Laravel 11, leaving users uncertain about its future compatibility. By forking the repository, aim to ensure that this essential package remains up-to-date and compatible with the latest Laravel versions.
 
 ## Compatibility
-This package only compatible with Laravel version 10 and above and  there are no plans to support below that. This is to ensure easy maintenance of this package.
+
+This package is only compatible with Laravel version 10, 11, and 12.
 
 ## Installation
 
