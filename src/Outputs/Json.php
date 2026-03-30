@@ -18,7 +18,7 @@ class Json implements Output
         if ($response instanceof JsonResponse) {
             $data = $response->getData(true);
             if (! is_array($data)){
-                $data = [ $data ];
+                $data = [$data];
             }
 
             $data['warning_queries'] = $detectedQueries;

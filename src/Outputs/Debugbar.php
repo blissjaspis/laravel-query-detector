@@ -5,9 +5,9 @@ namespace BlissJaspis\QueryDetector\Outputs;
 use Illuminate\Support\Collection;
 use Symfony\Component\HttpFoundation\Response;
 
-use Barryvdh\Debugbar\Facade as LaravelDebugbar;
 use BlissJaspis\QueryDetector\Contracts\Output;
 use DebugBar\DataCollector\MessagesCollector;
+use Fruitcake\LaravelDebugbar\Facades\Debugbar as LaravelDebugbar;
 
 class Debugbar implements Output
 {

@@ -11,7 +11,15 @@ This repository is a fork of [beyondcode/laravel-query-detector](https://github.
 
 ## Compatibility
 
-This package is only compatible with Laravel version 10, 11, and 12.
+### Version 2.x (Current)
+This package version 2.x is only compatible with **Laravel 12 and above**.
+
+### Version 1.x
+For **Laravel 11 and below**, please use version 1.x:
+
+```bash
+composer require blissjaspis/laravel-query-detector:^1.0 --dev
+```
 
 ## Installation
 

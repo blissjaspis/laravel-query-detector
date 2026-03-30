@@ -50,7 +50,7 @@ return [
      * Writes the N+1 queries warnings to Clockwork log
      * \BlissJaspis\QueryDetector\Outputs\Clockwork::class
      *
-     * Debugbar: (make sure you have the barryvdh/laravel-debugbar package installed)
+     * Debugbar: (make sure you have the fruitcake/laravel-debugbar package installed)
      * Writes the N+1 queries into a custom messages collector of Debugbar
      * \BlissJaspis\QueryDetector\Outputs\Debugbar::class
      *
