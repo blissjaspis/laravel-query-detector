@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use BlissJaspis\QueryDetector\QueryDetectorMiddleware;
+use BlissJaspis\QueryDetector\Middleware\QueryDetectorMiddleware;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;

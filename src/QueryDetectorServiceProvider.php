@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace BlissJaspis\QueryDetector;
 
+use BlissJaspis\QueryDetector\Middleware\QueryDetectorMiddleware;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Support\ServiceProvider;
 

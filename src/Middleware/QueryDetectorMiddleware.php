@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace BlissJaspis\QueryDetector;
+namespace BlissJaspis\QueryDetector\Middleware;
 
+use BlissJaspis\QueryDetector\QueryDetector;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
