@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Support\Facades\Route;
 use Workbench\App\Http\Controllers\QueryController;
 
@@ -11,4 +13,6 @@ Route::get('/deteck-n-plus-query-on-morph-relation', [QueryController::class, 'd
 Route::get('/deteck-n-plus-query-on-morph-relation-with-builder', [QueryController::class, 'detectNPlusQueryOnMorphRelationWithBuilder']);
 Route::get('/n-plus-query-ignores-redirects', [QueryController::class, 'nPlusQueryIgnoresRedirects']);
 Route::get('/fire-an-event-if-detect-n-query', [QueryController::class, 'fireAnEventIfDetectNQuery']);
+Route::get('/not-fire-an-event-if-detect-no-n-query', [QueryController::class, 'notFireAnEventIfDetectNoNQuery']);
+Route::get('/n-plus-query-json', [QueryController::class, 'nPlusQueryJson']);
 Route::get('/use-trace-line-to-detect-query', [QueryController::class, 'useTraceLineToDetectQuery']);

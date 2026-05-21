@@ -1,42 +1,41 @@
 <?php
 
+declare(strict_types=1);
+
 namespace BlissJaspis\QueryDetector;
 
-use Illuminate\Support\Facades\DB;
+use BlissJaspis\QueryDetector\Events\QueryDetected;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response;
-use Illuminate\Database\Eloquent\Relations\Relation;
-use BlissJaspis\QueryDetector\Events\QueryDetected;
 
 class QueryDetector
 {
-    /** @var Collection */
-    private $queries;
-    /**
-     * @var bool
-     */
-    private $booted = false;
+    private Collection $queries;
 
-    private function resetQueries()
-    {
-        $this->queries = Collection::make();
-    }
+    private bool $booted = false;
+
+    private bool $eventDispatched = false;
+
+    private ?Collection $detectedQueriesCache = null;
 
     public function __construct()
     {
         $this->resetQueries();
     }
 
-    public function boot()
+    public function boot(): void
     {
         if ($this->booted) {
-            $this->resetQueries();
+            $this->resetForRequest();
+
             return;
         }
 
-        DB::listen(function ($query) {
+        DB::listen(function ($query): void {
             $backtrace = collect(debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT, 50));
 
             $this->logQuery($query, $backtrace);
@@ -58,62 +57,71 @@ class QueryDetector
             $configEnabled = config('app.debug');
         }
 
-        return $configEnabled;
+        return (bool) $configEnabled;
     }
 
-    public function logQuery($query, Collection $backtrace)
+    public function logQuery(object $query, Collection $backtrace): void
     {
         $modelTrace = $backtrace->first(function ($trace) {
             return Arr::get($trace, 'object') instanceof Builder;
         });
 
-        // The query is coming from an Eloquent model
-        if (!is_null($modelTrace)) {
-            /*
-             * Relations get resolved by either calling the "getRelationValue" method on the model,
-             * or if the class itself is a Relation.
-             */
-            $relation = $backtrace->first(function ($trace) {
-                return Arr::get($trace, 'function') === 'getRelationValue' || Arr::get($trace, 'class') === Relation::class;
-            });
-
-            // We try to access a relation
-            if (is_array($relation) && isset($relation['object'])) {
-                if ($relation['class'] === Relation::class) {
-                    $model = get_class($relation['object']->getParent());
-                    $relationName = get_class($relation['object']->getRelated());
-                    $relatedModel = $relationName;
-                } else {
-                    $model = get_class($relation['object']);
-                    $relationName = $relation['args'][0];
-                    $relatedModel = $relationName;
-                }
-
-                $sources = $this->findSource($backtrace);
-
-                if (empty($sources)) {
-                    return;
-                }
-
-                $key = md5($query->sql . $model . $relationName . $sources[0]->name . $sources[0]->line);
-
-                $count = Arr::get($this->queries, $key . '.count', 0);
-                $time = Arr::get($this->queries, $key . '.time', 0);
-
-                $this->queries[$key] = [
-                    'count' => ++$count,
-                    'time' => $time + $query->time,
-                    'query' => $query->sql,
-                    'model' => $model,
-                    'relatedModel' => $relatedModel,
-                    'relation' => $relationName,
-                    'sources' => $sources
-                ];
-            }
+        if ($modelTrace === null) {
+            return;
         }
+
+        $relation = $backtrace->first(function ($trace) {
+            $object = Arr::get($trace, 'object');
+
+            return Arr::get($trace, 'function') === 'getRelationValue'
+                || $object instanceof Relation;
+        });
+
+        if (! is_array($relation) || ! isset($relation['object'])) {
+            return;
+        }
+
+        if ($relation['object'] instanceof Relation) {
+            $relationObject = $relation['object'];
+            $model = $relationObject->getParent()::class;
+            $relationName = $this->resolveRelationName($relationObject, $backtrace);
+            $relatedModel = $relationObject->getRelated()::class;
+        } else {
+            $model = get_class($relation['object']);
+            $relationName = $relation['args'][0];
+            $relatedModel = $this->resolveRelatedModelClass($relation['object'], $relationName) ?? $relationName;
+        }
+
+        $sources = $this->findSource($backtrace);
+
+        if ($sources === []) {
+            return;
+        }
+
+        $key = md5($query->sql.$model.$relationName.$sources[0]['name'].$sources[0]['line']);
+
+        $count = Arr::get($this->queries, $key.'.count', 0);
+        $time = Arr::get($this->queries, $key.'.time', 0);
+
+        $detectedQuery = [
+            'count' => ++$count,
+            'time' => $time + $query->time,
+            'query' => $query->sql,
+            'model' => $model,
+            'relatedModel' => $relatedModel,
+            'relation' => $relationName,
+            'sources' => $sources,
+        ];
+
+        $this->queries[$key] = $detectedQuery;
+
+        $this->detectedQueriesCache = null;
     }
 
-    protected function findSource($stack)
+    /**
+     * @return list<array{index: int, name: string|null, line: int|string}>
+     */
+    protected function findSource(Collection $stack): array
     {
         $sources = [];
 
@@ -124,43 +132,39 @@ class QueryDetector
         return array_values(array_filter($sources));
     }
 
-    public function parseTrace($index, array $trace)
+    /**
+     * @param  array<string, mixed>  $trace
+     * @return array{index: int, name: string|null, line: int|string}|false
+     */
+    public function parseTrace(int $index, array $trace): array|false
     {
-        $frame = (object)[
-            'index' => $index,
-            'name' => null,
-            'line' => isset($trace['line']) ? $trace['line'] : '?',
-        ];
-
-        if (isset($trace['class']) &&
-            isset($trace['file']) &&
-            !$this->fileIsInExcludedPath($trace['file'])
+        if (isset($trace['class'], $trace['file']) &&
+            ! $this->fileIsInExcludedPath($trace['file'])
         ) {
-            $frame->name = $this->normalizeFilename($trace['file']);
-
-            return $frame;
+            return [
+                'index' => $index,
+                'name' => $this->normalizeFilename($trace['file']),
+                'line' => $trace['line'] ?? '?',
+            ];
         }
 
         return false;
     }
 
-    /**
-     * Check if the given file is to be excluded from analysis
-     *
-     * @param string $file
-     * @return bool
-     */
-    protected function fileIsInExcludedPath($file)
+    protected function fileIsInExcludedPath(string $file): bool
     {
-        $excludedPaths = [
-            '/vendor/laravel/framework/src/Illuminate/Database',
-            '/vendor/laravel/framework/src/Illuminate/Events',
-        ];
+        $excludedPaths = array_merge(
+            [
+                '/vendor/laravel/framework/src/Illuminate/Database',
+                '/vendor/laravel/framework/src/Illuminate/Events',
+            ],
+            config('querydetector.excluded_paths', [])
+        );
 
         $normalizedPath = str_replace('\\', '/', $file);
 
         foreach ($excludedPaths as $excludedPath) {
-            if (strpos($normalizedPath, $excludedPath) !== false) {
+            if (str_contains($normalizedPath, $excludedPath)) {
                 return true;
             }
         }
@@ -168,16 +172,10 @@ class QueryDetector
         return false;
     }
 
-    /**
-     * Shorten the path by removing the relative links and base dir
-     *
-     * @param string $path
-     * @return string
-     */
-    protected function normalizeFilename($path): string
+    protected function normalizeFilename(string $path): string
     {
         if (file_exists($path)) {
-            $path = realpath($path);
+            $path = realpath($path) ?: $path;
         }
 
         return str_replace(base_path(), '', $path);
@@ -185,52 +183,176 @@ class QueryDetector
 
     public function getDetectedQueries(): Collection
     {
-        $exceptions = config('querydetector.except', []);
-
-        $queries = $this->queries
-            ->values();
-
-        foreach ($exceptions as $parentModel => $relations) {
-            foreach ($relations as $relation) {
-                $queries = $queries->reject(function ($query) use ($relation, $parentModel) {
-                    return $query['model'] === $parentModel && $query['relatedModel'] === $relation;
-                });
-            }
+        if ($this->detectedQueriesCache !== null) {
+            return $this->detectedQueriesCache;
         }
 
-        $queries = $queries->where('count', '>', config('querydetector.threshold', 1))->values();
+        $queries = $this->filterQueries($this->queries->values());
 
-        if ($queries->isNotEmpty()) {
-            event(new QueryDetected($queries));
-        }
+        $this->detectedQueriesCache = $queries;
 
         return $queries;
     }
 
-    protected function getOutputTypes()
+    protected function filterQueries(Collection $queries): Collection
+    {
+        $exceptions = config('querydetector.except', []);
+
+        foreach ($exceptions as $parentModel => $relations) {
+            foreach ($relations as $relation) {
+                $queries = $queries->reject(function (array $query) use ($relation, $parentModel): bool {
+                    if ($query['model'] !== $parentModel) {
+                        return false;
+                    }
+
+                    return $query['relation'] === $relation
+                        || $query['relatedModel'] === $relation;
+                });
+            }
+        }
+
+        return $queries
+            ->where('count', '>', config('querydetector.threshold', 1))
+            ->values();
+    }
+
+    protected function dispatchQueryDetectedEvent(Collection $queries): void
+    {
+        if ($queries->isEmpty() || $this->eventDispatched) {
+            return;
+        }
+
+        event(new QueryDetected($queries));
+
+        $this->eventDispatched = true;
+    }
+
+    /**
+     * @return list<class-string>
+     */
+    protected function getOutputTypes(): array
     {
         $outputTypes = config('querydetector.output');
 
-        if (!is_array($outputTypes)) {
+        if (! is_array($outputTypes)) {
             $outputTypes = [$outputTypes];
         }
 
         return $outputTypes;
     }
 
-    protected function applyOutput(Response $response)
+    protected function applyOutput(Collection $detectedQueries, Response $response): void
     {
         foreach ($this->getOutputTypes() as $type) {
-            app($type)->output($this->getDetectedQueries(), $response);
+            app($type)->output($detectedQueries, $response);
         }
     }
 
-    public function output($request, $response)
+    public function output(mixed $request, Response $response): Response
     {
-        if ($this->getDetectedQueries()->isNotEmpty()) {
-            $this->applyOutput($response);
+        $detectedQueries = $this->getDetectedQueries();
+
+        $this->dispatchQueryDetectedEvent($detectedQueries);
+
+        if ($detectedQueries->isNotEmpty()) {
+            $this->applyOutput($detectedQueries, $response);
         }
 
         return $response;
+    }
+
+    protected function resolveRelationName(Relation $relationObject, Collection $backtrace): string
+    {
+        $getRelationValueTrace = $backtrace->first(function ($trace) {
+            return Arr::get($trace, 'function') === 'getRelationValue'
+                && isset($trace['args'][0]);
+        });
+
+        if (is_array($getRelationValueTrace)) {
+            return $getRelationValueTrace['args'][0];
+        }
+
+        $relationMethodTrace = $backtrace
+            ->filter(function ($trace) use ($relationObject) {
+                $function = Arr::get($trace, 'function');
+                $object = Arr::get($trace, 'object');
+
+                return is_string($function)
+                    && ! str_starts_with($function, '__')
+                    && is_object($object)
+                    && $object::class === $relationObject->getParent()::class
+                    && method_exists($object, $function);
+            })
+            ->first();
+
+        if (is_array($relationMethodTrace)) {
+            return $relationMethodTrace['function'];
+        }
+
+        if (method_exists($relationObject, 'getRelationName')) {
+            $relationName = $relationObject->getRelationName();
+
+            if (is_string($relationName) && $relationName !== '') {
+                return $relationName;
+            }
+        }
+
+        return $this->guessRelationNameFromParent($relationObject);
+    }
+
+    protected function guessRelationNameFromParent(Relation $relationObject): string
+    {
+        $parent = $relationObject->getParent();
+        $relatedClass = $relationObject->getRelated()::class;
+        $relationClass = $relationObject::class;
+
+        foreach (get_class_methods($parent) as $method) {
+            if (str_starts_with($method, '__')) {
+                continue;
+            }
+
+            try {
+                $relation = $parent->{$method}();
+
+                if ($relation::class === $relationClass && $relation->getRelated()::class === $relatedClass) {
+                    return $method;
+                }
+            } catch (\Throwable) {
+                continue;
+            }
+        }
+
+        return $relatedClass;
+    }
+
+    protected function resolveRelatedModelClass(object $model, string $relationName): ?string
+    {
+        if (! method_exists($model, $relationName)) {
+            return null;
+        }
+
+        try {
+            $relation = $model->{$relationName}();
+
+            if (! $relation instanceof Relation) {
+                return null;
+            }
+
+            return $relation->getRelated()::class;
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    private function resetQueries(): void
+    {
+        $this->queries = Collection::make();
+    }
+
+    private function resetForRequest(): void
+    {
+        $this->resetQueries();
+        $this->detectedQueriesCache = null;
+        $this->eventDispatched = false;
     }
 }

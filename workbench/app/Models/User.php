@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Workbench\App\Models;
 
-use Illuminate\Notifications\Notifiable;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 use Orchestra\Testbench\Factories\UserFactory;
 
 class User extends Authenticatable

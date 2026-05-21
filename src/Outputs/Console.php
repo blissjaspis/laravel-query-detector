@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace BlissJaspis\QueryDetector\Outputs;
 
 use BlissJaspis\QueryDetector\Contracts\Output;
@@ -8,12 +10,12 @@ use Symfony\Component\HttpFoundation\Response;
 
 class Console implements Output
 {
-    public function boot()
+    public function boot(): void
     {
         //
     }
 
-    public function output(Collection $detectedQueries, Response $response)
+    public function output(Collection $detectedQueries, Response $response): void
     {
         if (stripos($response->headers->get('Content-Type'), 'text/html') !== 0 || $response->isRedirection()) {
             return;
@@ -25,34 +27,33 @@ class Console implements Output
 
         $pos = strripos($content, '</body>');
 
-        if (false !== $pos) {
-            $content = substr($content, 0, $pos) . $outputContent . substr($content, $pos);
+        if ($pos !== false) {
+            $content = substr($content, 0, $pos).$outputContent.substr($content, $pos);
         } else {
-            $content = $content . $outputContent;
+            $content = $content.$outputContent;
         }
 
-        // Update the new content and reset the content length
         $response->setContent($content);
 
         $response->headers->remove('Content-Length');
     }
 
-    protected function getOutputContent(Collection $detectedQueries)
+    protected function getOutputContent(Collection $detectedQueries): string
     {
         $output = '<script type="text/javascript">';
         $output .= "console.warn('Found the following N+1 queries in this request:\\n\\n";
         foreach ($detectedQueries as $detectedQuery) {
-            $output .= "Model: ".addslashes($detectedQuery['model'])." => Relation: ".addslashes($detectedQuery['relation']);
+            $output .= 'Model: '.addslashes($detectedQuery['model']).' => Relation: '.addslashes($detectedQuery['relation']);
             $output .= " - You should add \"with(\'".addslashes($detectedQuery['relation'])."\')\" to eager-load this relation.";
-            $output .= "\\n\\n";
-            $output .= "Model: ".addslashes($detectedQuery['model'])."\\n";
-            $output .= "Relation: ".addslashes($detectedQuery['relation'])."\\n";
-            $output .= "Num-Called: ".$detectedQuery['count']."\\n";
-            $output .= "\\n";
+            $output .= '\\n\\n';
+            $output .= 'Model: '.addslashes($detectedQuery['model']).'\\n';
+            $output .= 'Relation: '.addslashes($detectedQuery['relation']).'\\n';
+            $output .= 'Num-Called: '.$detectedQuery['count'].'\\n';
+            $output .= '\\n';
             $output .= 'Call-Stack:\\n';
 
             foreach ($detectedQuery['sources'] as $source) {
-                $output .= "#$source->index $source->name:$source->line\\n";
+                $output .= "#{$source['index']} {$source['name']}:{$source['line']}\\n";
             }
         }
         $output .= "')";

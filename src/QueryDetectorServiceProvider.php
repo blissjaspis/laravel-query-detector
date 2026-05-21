@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace BlissJaspis\QueryDetector;
 
 use Illuminate\Contracts\Http\Kernel;
@@ -7,10 +9,7 @@ use Illuminate\Support\ServiceProvider;
 
 class QueryDetectorServiceProvider extends ServiceProvider
 {
-    /**
-     * Bootstrap the application services.
-     */
-    public function boot()
+    public function boot(): void
     {
         if ($this->app->runningInConsole()) {
             $this->publishes([
@@ -21,22 +20,14 @@ class QueryDetectorServiceProvider extends ServiceProvider
         $this->registerMiddleware(QueryDetectorMiddleware::class);
     }
 
-    /**
-     * Register the application services.
-     */
-    public function register()
+    public function register(): void
     {
         $this->app->singleton(QueryDetector::class);
 
         $this->mergeConfigFrom(__DIR__.'/../config/config.php', 'querydetector');
     }
 
-    /**
-     * Register the middleware
-     *
-     * @param  string $middleware
-     */
-    protected function registerMiddleware($middleware)
+    protected function registerMiddleware(string $middleware): void
     {
         $kernel = $this->app[Kernel::class];
         $kernel->pushMiddleware($middleware);

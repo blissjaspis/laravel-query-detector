@@ -1,8 +1,9 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Workbench\App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use Workbench\App\Models\Author;
 use Workbench\App\Models\Post;
 
@@ -89,6 +90,17 @@ class QueryController
         foreach ($authors as $author) {
             $author->profile;
         }
+    }
+
+    public function nPlusQueryJson()
+    {
+        $authors = Author::all();
+
+        foreach ($authors as $author) {
+            $author->profile;
+        }
+
+        return response()->json(['authors' => $authors->count()]);
     }
 
     public function useTraceLineToDetectQuery()

@@ -1,24 +1,20 @@
 <?php
 
+declare(strict_types=1);
+
 namespace BlissJaspis\QueryDetector;
 
 use Closure;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 class QueryDetectorMiddleware
 {
-
     public function __construct(
         public QueryDetector $detector
-    ){}
+    ) {}
 
-    /**
-     * Handle an incoming request.
-     *
-     * @param  Request  $request
-     * @param  Closure  $next
-     * @return mixed
-     */
-    public function handle($request, Closure $next)
+    public function handle(Request $request, Closure $next): Response
     {
         if (! $this->detector->isEnabled()) {
             return $next($request);
@@ -26,12 +22,8 @@ class QueryDetectorMiddleware
 
         $this->detector->boot();
 
-        /** @var \Illuminate\Http\Response $response */
         $response = $next($request);
 
-        // Modify the response to add the Debugbar
-        $this->detector->output($request, $response);
-
-        return $response;
+        return $this->detector->output($request, $response);
     }
 }

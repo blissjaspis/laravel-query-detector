@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Workbench\Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -9,7 +11,7 @@ use Workbench\App\Models\Post;
 /**
  * @template TModel of \Workbench\App\Post
  *
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<TModel>
+ * @extends Factory<TModel>
  */
 class PostFactory extends Factory
 {
@@ -32,7 +34,7 @@ class PostFactory extends Factory
             'author_id' => function () {
                 return Author::factory()->create()->id;
             },
-            'body' => $this->faker->paragraphs(rand(3,10), true),
+            'body' => $this->faker->paragraphs(rand(3, 10), true),
         ];
     }
 }

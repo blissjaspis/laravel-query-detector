@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Workbench\Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -8,7 +10,7 @@ use Workbench\App\Models\Comment;
 /**
  * @template TModel of \Workbench\App\Commenct
  *
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<TModel>
+ * @extends Factory<TModel>
  */
 class CommentFactory extends Factory
 {

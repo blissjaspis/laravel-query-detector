@@ -1,5 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
+use BlissJaspis\QueryDetector\Outputs\Alert;
+use BlissJaspis\QueryDetector\Outputs\Log;
+
 return [
     /*
      * Enable or disable the query detection.
@@ -16,15 +21,19 @@ return [
     /*
      * Here you can whitelist model relations.
      *
-     * Right now, you need to define the model relation both as the class name and the attribute name on the model.
-     * So if an "Author" model would have a "posts" relation that points to a "Post" class, you need to add both
-     * the "posts" attribute and the "Post::class", since the relation can get resolved in multiple ways.
+     * Use the relation method name (e.g. "posts"). The related model class is also accepted for convenience.
      */
     'except' => [
-        //Author::class => [
-        //    Post::class,
+        // Author::class => [
         //    'posts',
-        //]
+        // ]
+    ],
+
+    /*
+     * Paths excluded from the call stack (normalized with forward slashes).
+     */
+    'excluded_paths' => [
+        // '/vendor/some/package',
     ],
 
     /*
@@ -63,7 +72,7 @@ return [
      * \BlissJaspis\QueryDetector\Outputs\Log::class
      */
     'output' => [
-        \BlissJaspis\QueryDetector\Outputs\Alert::class,
-        \BlissJaspis\QueryDetector\Outputs\Log::class,
-    ]
+        Alert::class,
+        Log::class,
+    ],
 ];

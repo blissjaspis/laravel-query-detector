@@ -2,6 +2,24 @@
 
 All notable changes to `laravel-query-detector` will be documented in this file
 
+## Unreleased
+
+### Added
+- GitHub Actions CI (tests, Pint, PHPStan)
+- Composer `suggest` for optional Debugbar and Clockwork dependencies
+- `excluded_paths` configuration for custom stack trace exclusions
+- Tests for threshold, `app.debug`, outputs, and single event dispatch per request
+
+### Changed
+- Relation names in detection output use Eloquent relation method names (e.g. `posts`) instead of related model class names
+- `relatedModel` stores the related model class separately from `relation`
+- `QueryDetected` event is dispatched once per HTTP request
+- README and usage documentation completed
+
+### Fixed
+- PHPUnit configuration no longer references a missing `tests/Unit` directory
+- Missing workbench route for the no-N+1 event test
+
 ## 2.0.0 - 2026-03-29
 
 ### Breaking Changes

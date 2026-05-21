@@ -1,10 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace BlissJaspis\QueryDetector\Tests;
 
 use BlissJaspis\QueryDetector\QueryDetectorServiceProvider;
 use Illuminate\Contracts\Config\Repository;
+use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\ServiceProvider;
 use Orchestra\Testbench\Concerns\WithWorkbench;
 use Orchestra\Testbench\TestCase as OrchestraTestCase;
 
@@ -14,7 +18,7 @@ abstract class TestCase extends OrchestraTestCase
 {
     use RefreshDatabase, WithWorkbench;
 
-    public function setUp(): void
+    protected function setUp(): void
     {
         parent::setUp();
     }
@@ -22,20 +26,20 @@ abstract class TestCase extends OrchestraTestCase
     /**
      * Get package providers.
      *
-     * @param  \Illuminate\Foundation\Application  $app
-     * @return array<int, class-string<\Illuminate\Support\ServiceProvider>>
+     * @param  Application  $app
+     * @return array<int, class-string<ServiceProvider>>
      */
     public function getPackageProviders($app)
     {
         return [
-            QueryDetectorServiceProvider::class
+            QueryDetectorServiceProvider::class,
         ];
     }
 
     /**
      * Define environment setup.
      *
-     * @param  \Illuminate\Foundation\Application  $app
+     * @param  Application  $app
      * @return void
      */
     protected function defineEnvironment($app)
@@ -43,9 +47,9 @@ abstract class TestCase extends OrchestraTestCase
         tap($app['config'], function (Repository $config) {
             $config->set('database.default', 'testbench');
             $config->set('database.connections.testbench', [
-                'driver'   => 'sqlite',
+                'driver' => 'sqlite',
                 'database' => ':memory:',
-                'prefix'   => '',
+                'prefix' => '',
             ]);
 
             $config->set('querydetector.enabled', true);
@@ -59,5 +63,10 @@ abstract class TestCase extends OrchestraTestCase
     protected function defineDatabaseMigrations()
     {
         $this->loadMigrationsFrom(workbench_path('database/migrations'));
+    }
+
+    protected function afterRefreshingDatabase()
+    {
+        $this->artisan('db:seed', ['--class' => 'Workbench\\Database\\Seeders\\DatabaseSeeder']);
     }
 }

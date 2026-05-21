@@ -1,21 +1,22 @@
 # Laravel N+1 Query Detector
 
-The Laravel N+1 query detector helps you to increase your application's performance by reducing the number of queries it executes. This package monitors your queries in real-time, while you develop your application and notify you when you should add eager loading (N+1 queries).
+The Laravel N+1 query detector helps you improve application performance by spotting relation queries that should be eager loaded. It monitors queries in real time during development and notifies you when an N+1 pattern is detected.
 
 ![Example alert](/asset/n+.png)
 
-
 ## History
 
-This repository is a fork of [beyondcode/laravel-query-detector](https://github.com/beyondcode/laravel-query-detector). Why forked? The fork was created because the original package hadn't been updated to support Laravel 11, leaving users uncertain about its future compatibility. By forking the repository, aim to ensure that this essential package remains up-to-date and compatible with the latest Laravel versions.
+This repository is a fork of [beyondcode/laravel-query-detector](https://github.com/beyondcode/laravel-query-detector). The original package was not updated for newer Laravel releases, so this fork keeps the tool compatible with current Laravel versions.
 
 ## Compatibility
 
-### Version 2.x (Current)
-This package version 2.x is only compatible with **Laravel 12 and above**.
+### Version 2.x (current)
+
+Compatible with **Laravel 12 and above** (PHP 8.2+).
 
 ### Version 1.x
-For **Laravel 11 and below**, please use version 1.x:
+
+For **Laravel 11 and below**:
 
 ```bash
 composer require blissjaspis/laravel-query-detector:^1.0 --dev
@@ -23,36 +24,107 @@ composer require blissjaspis/laravel-query-detector:^1.0 --dev
 
 ## Installation
 
-You can install the package via composer:
+Install as a development dependency:
 
 ```bash
 composer require blissjaspis/laravel-query-detector --dev
 ```
 
-The package will automatically register itself.
+The service provider is registered automatically.
 
-## Documentation
+Publish configuration (optional):
 
-On going...
+```bash
+php artisan vendor:publish --provider="BlissJaspis\QueryDetector\QueryDetectorServiceProvider"
+```
 
+## Usage
 
-### Testing
+When `APP_DEBUG=true` (and `QUERY_DETECTOR_ENABLED` is not set to `false`), detection runs automatically on HTTP requests. No extra setup is required.
 
-``` bash
+### Configuration
+
+| Key | Default | Description |
+|-----|---------|-------------|
+| `enabled` | `null` | `null` uses `config('app.debug')`. Set `false` to disable explicitly. |
+| `threshold` | `1` | Minimum number of identical relation queries before reporting. |
+| `except` | `[]` | Whitelist per parent model. Use relation names (e.g. `posts`) or related model classes. |
+| `excluded_paths` | `[]` | Extra stack trace paths to ignore. |
+| `log_channel` | `daily` | Log channel when using the Log output. |
+| `output` | `Alert`, `Log` | One or more output classes (see below). |
+
+Environment variables:
+
+- `QUERY_DETECTOR_ENABLED`
+- `QUERY_DETECTOR_THRESHOLD`
+- `QUERY_DETECTOR_LOG_CHANNEL`
+
+### Output drivers
+
+Configure `output` in `config/querydetector.php`:
+
+| Class | Description |
+|-------|-------------|
+| `Outputs\Alert` | Browser `alert()` on HTML responses |
+| `Outputs\Console` | Browser `console.warn()` on HTML responses |
+| `Outputs\Log` | Writes to a Laravel log channel |
+| `Outputs\Json` | Appends `warning_queries` to JSON API responses |
+| `Outputs\Debugbar` | Requires [`fruitcake/laravel-debugbar`](https://github.com/fruitcake/laravel-debugbar) |
+| `Outputs\Clockwork` | Requires [`itsgoingd/clockwork`](https://github.com/itsgoingd/clockwork) |
+
+Optional integrations are listed under `composer suggest`.
+
+### Custom handling
+
+Listen for `BlissJaspis\QueryDetector\Events\QueryDetected` to send notifications (Sentry, Slack, etc.):
+
+```php
+use BlissJaspis\QueryDetector\Events\QueryDetected;
+
+Event::listen(QueryDetected::class, function (QueryDetected $event) {
+    foreach ($event->getQueries() as $query) {
+        // $query['model'], $query['relation'], $query['relatedModel'], $query['count'], ...
+    }
+});
+```
+
+The event is dispatched once per HTTP request when issues are found.
+
+### Scope and limitations
+
+- Detection runs on **HTTP requests** via global middleware (not Artisan, queue workers, or plain PHPUnit tests without HTTP).
+- Intended for **local/staging development** only; keep it as a `--dev` dependency.
+- For Octane and other long-lived workers, the detector resets its state between requests but keeps a single `DB::listen` registration per worker process.
+
+More detail: [docs/usage.md](docs/usage.md).
+
+## Development
+
+```bash
+composer install
+composer test      # Run tests
+composer lint      # Pint (dry-run) + PHPStan
+composer format    # Apply Pint fixes
+composer analyse   # PHPStan only
+```
+
+## Testing
+
+```bash
 composer test
 ```
 
-### Changelog
+## Changelog
 
-Please see [CHANGELOG](CHANGELOG.md) for more information what has changed recently.
+See [CHANGELOG](CHANGELOG.md).
 
 ## Contributing
 
-Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
+See [CONTRIBUTING](CONTRIBUTING.md).
 
-### Security
+## Security
 
-If you discover any security related issues, please email bliss@jaspis.me instead of using the issue tracker.
+Report security issues to bliss@jaspis.me instead of using the public issue tracker.
 
 ## Credits
 
@@ -62,4 +134,4 @@ If you discover any security related issues, please email bliss@jaspis.me instea
 
 ## License
 
-The MIT License (MIT). Please see [License File](LICENSE.md) for more information.
+The MIT License (MIT). See [LICENSE](LICENSE.md).

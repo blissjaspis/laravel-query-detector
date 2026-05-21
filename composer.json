@@ -22,9 +22,17 @@
     },
     "require-dev": {
         "fruitcake/laravel-debugbar": "^4.1",
+        "itsgoingd/clockwork": "^5.2",
+        "larastan/larastan": "^3.0",
+        "laravel/pint": "^1.0",
         "nunomaduro/collision": "^8.0",
         "orchestra/testbench": "^10.0|^11.0",
+        "phpstan/phpstan": "^2.0",
         "phpunit/phpunit": "^11.0|^12.0|^13.0"
+    },
+    "suggest": {
+        "fruitcake/laravel-debugbar": "Required to use the Debugbar output (^4.1).",
+        "itsgoingd/clockwork": "Required to use the Clockwork output (^5.2)."
     },
     "autoload": {
         "psr-4": {
@@ -55,8 +63,12 @@
             "@build",
             "@php vendor/bin/testbench serve"
         ],
+        "format": "vendor/bin/pint",
+        "format:test": "vendor/bin/pint --test",
+        "analyse": "vendor/bin/phpstan analyse",
         "lint": [
-            "@php vendor/bin/phpstan analyse"
+            "@format:test",
+            "@analyse"
         ]
     },
     "config": {

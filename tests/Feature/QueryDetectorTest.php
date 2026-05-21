@@ -1,11 +1,13 @@
 <?php
 
-namespace BlissJaspis\QueryDetector\Feature\Tests;
+declare(strict_types=1);
 
-use Illuminate\Support\Facades\Event;
-use BlissJaspis\QueryDetector\QueryDetector;
+namespace BlissJaspis\QueryDetector\Tests\Feature;
+
 use BlissJaspis\QueryDetector\Events\QueryDetected;
+use BlissJaspis\QueryDetector\QueryDetector;
 use BlissJaspis\QueryDetector\Tests\TestCase;
+use Illuminate\Support\Facades\Event;
 use Workbench\App\Models\Author;
 use Workbench\App\Models\Comment;
 use Workbench\App\Models\Post;
@@ -74,7 +76,8 @@ class QueryDetectorTest extends TestCase
 
         $this->assertSame(Author::count(), $queries[0]['count']);
         $this->assertSame(Author::class, $queries[0]['model']);
-        $this->assertSame(Post::class, $queries[0]['relation']);
+        $this->assertSame('posts', $queries[0]['relation']);
+        $this->assertSame(Post::class, $queries[0]['relatedModel']);
     }
 
     public function test_it_detects_all_n1_queries()
@@ -87,7 +90,8 @@ class QueryDetectorTest extends TestCase
 
         $this->assertSame(Author::count(), $queries[0]['count']);
         $this->assertSame(Author::class, $queries[0]['model']);
-        $this->assertSame(Post::class, $queries[0]['relation']);
+        $this->assertSame('posts', $queries[0]['relation']);
+        $this->assertSame(Post::class, $queries[0]['relatedModel']);
 
         $this->assertSame(Post::count(), $queries[1]['count']);
         $this->assertSame(Post::class, $queries[1]['model']);
@@ -117,7 +121,8 @@ class QueryDetectorTest extends TestCase
 
         $this->assertSame(Post::count(), $queries[0]['count']);
         $this->assertSame(Post::class, $queries[0]['model']);
-        $this->assertSame(Comment::class, $queries[0]['relation']);
+        $this->assertSame('comments', $queries[0]['relation']);
+        $this->assertSame(Comment::class, $queries[0]['relatedModel']);
     }
 
     public function test_it_can_be_disabled()
@@ -136,8 +141,8 @@ class QueryDetectorTest extends TestCase
         $this->app['config']->set('querydetector.enabled', true);
         $this->app['config']->set('querydetector.except', [
             Post::class => [
-                Comment::class
-            ]
+                Comment::class,
+            ],
         ]);
 
         $this->get('/deteck-n-plus-query-on-morph-relation-with-builder');
@@ -152,8 +157,8 @@ class QueryDetectorTest extends TestCase
         $this->app['config']->set('querydetector.enabled', true);
         $this->app['config']->set('querydetector.except', [
             Post::class => [
-                'comments'
-            ]
+                'comments',
+            ],
         ]);
 
         $this->get('/deteck-n-plus-query-on-morph-relation');
