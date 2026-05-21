@@ -3,6 +3,10 @@
 declare(strict_types=1);
 
 use BlissJaspis\QueryDetector\Outputs\Alert;
+use BlissJaspis\QueryDetector\Outputs\Clockwork;
+use BlissJaspis\QueryDetector\Outputs\Console;
+use BlissJaspis\QueryDetector\Outputs\Debugbar;
+use BlissJaspis\QueryDetector\Outputs\Json;
 use BlissJaspis\QueryDetector\Outputs\Log;
 
 return [
@@ -74,5 +78,39 @@ return [
     'output' => [
         Alert::class,
         Log::class,
+    ],
+
+    /*
+     * Output drivers per URI pattern (first match wins).
+     * Uses Laravel $request->is() syntax, e.g. "api/*", "admin/*".
+     */
+    'route_output' => [
+        // 'api/*' => [
+        //     Json::class,
+        //     Log::class,
+        // ],
+    ],
+
+    /*
+     * Output drivers per route name pattern (first match wins).
+     * Uses Laravel $request->routeIs() syntax, e.g. "api.*".
+     */
+    'route_names' => [
+        // 'api.*' => [
+        //     Json::class,
+        //     Log::class,
+        // ],
+    ],
+
+    /*
+     * Short names for the querydetector.output route middleware alias.
+     */
+    'output_aliases' => [
+        'alert' => Alert::class,
+        'console' => Console::class,
+        'log' => Log::class,
+        'json' => Json::class,
+        'clockwork' => Clockwork::class,
+        'debugbar' => Debugbar::class,
     ],
 ];

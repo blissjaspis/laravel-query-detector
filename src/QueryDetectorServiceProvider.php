@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace BlissJaspis\QueryDetector;
 
 use BlissJaspis\QueryDetector\Middleware\QueryDetectorMiddleware;
+use BlissJaspis\QueryDetector\Middleware\SetQueryDetectorOutput;
 use Illuminate\Contracts\Http\Kernel;
+use Illuminate\Routing\Router;
 use Illuminate\Support\ServiceProvider;
 
 class QueryDetectorServiceProvider extends ServiceProvider
@@ -19,6 +21,7 @@ class QueryDetectorServiceProvider extends ServiceProvider
         }
 
         $this->registerMiddleware(QueryDetectorMiddleware::class);
+        $this->registerOutputMiddlewareAlias();
     }
 
     public function register(): void
@@ -32,5 +35,11 @@ class QueryDetectorServiceProvider extends ServiceProvider
     {
         $kernel = $this->app[Kernel::class];
         $kernel->pushMiddleware($middleware);
+    }
+
+    protected function registerOutputMiddlewareAlias(): void
+    {
+        $router = $this->app->make(Router::class);
+        $router->aliasMiddleware('querydetector.output', SetQueryDetectorOutput::class);
     }
 }

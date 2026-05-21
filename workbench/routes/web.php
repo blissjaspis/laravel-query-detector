@@ -14,5 +14,5 @@ Route::get('/deteck-n-plus-query-on-morph-relation-with-builder', [QueryControll
 Route::get('/n-plus-query-ignores-redirects', [QueryController::class, 'nPlusQueryIgnoresRedirects']);
 Route::get('/fire-an-event-if-detect-n-query', [QueryController::class, 'fireAnEventIfDetectNQuery']);
 Route::get('/not-fire-an-event-if-detect-no-n-query', [QueryController::class, 'notFireAnEventIfDetectNoNQuery']);
-Route::get('/n-plus-query-json', [QueryController::class, 'nPlusQueryJson']);
+Route::get('/n-plus-query-json', [QueryController::class, 'nPlusQueryJson'])->name('workbench.n-plus-query-json');
 Route::get('/use-trace-line-to-detect-query', [QueryController::class, 'useTraceLineToDetectQuery']);

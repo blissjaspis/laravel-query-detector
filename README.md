@@ -51,7 +51,10 @@ When `APP_DEBUG=true` (and `QUERY_DETECTOR_ENABLED` is not set to `false`), dete
 | `except` | `[]` | Whitelist per parent model. Use relation names (e.g. `posts`) or related model classes. |
 | `excluded_paths` | `[]` | Extra stack trace paths to ignore. |
 | `log_channel` | `daily` | Log channel when using the Log output. |
-| `output` | `Alert`, `Log` | One or more output classes (see below). |
+| `output` | `Alert`, `Log` | Default output classes (see below). |
+| `route_output` | `[]` | URI pattern → output classes (e.g. `api/*` → Json + Log). |
+| `route_names` | `[]` | Route name pattern → output classes (e.g. `api.*`). |
+| `output_aliases` | built-in | Short names for `querydetector.output` route middleware. |
 
 Environment variables:
 
@@ -92,11 +95,15 @@ The event is dispatched once per HTTP request when issues are found.
 
 ### Scope and limitations
 
-- Detection runs on **HTTP requests** via global middleware (not Artisan, queue workers, or plain PHPUnit tests without HTTP).
+- Detection runs on **HTTP requests** via global middleware. **No manual middleware registration** is required—the service provider registers it automatically.
+- **Artisan commands, queue jobs, and schedulers** are not covered unless you wrap them manually in local dev (see [usage — Beyond HTTP](docs/usage.md#beyond-http-artisan-queues-and-jobs)).
+- **Inertia / SPA**: prefer `Log` + `Json` output; `Alert` only helps on full HTML page loads ([usage — SPA and Inertia](docs/usage.md#spa-and-inertiajs)).
 - Intended for **local/staging development** only; keep it as a `--dev` dependency.
 - For Octane and other long-lived workers, the detector resets its state between requests but keeps a single `DB::listen` registration per worker process.
 
 More detail: [docs/usage.md](docs/usage.md).
+
+Package internals and class responsibilities: [docs/architecture.md](docs/architecture.md).
 
 ## Development
 
