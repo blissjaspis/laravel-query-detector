@@ -21,6 +21,7 @@ All notable changes to `laravel-query-detector` will be documented in this file
 - README and usage documentation completed
 
 ### Fixed
+- `RelationResolver::guessRelationNameFromParent()` no longer invokes every model method to guess relation names (avoids side effects such as soft-deletes); uses reflection and safer `loadMissing` backtrace parsing instead
 - PHPUnit configuration no longer references a missing `tests/Unit` directory
 - Missing workbench route for the no-N+1 event test
 
