@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace BlissJaspis\QueryDetector\Outputs;
 
 use BlissJaspis\QueryDetector\Contracts\Output;
+use BlissJaspis\QueryDetector\Support\RequestContext;
+use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log as LaravelLog;
 use Symfony\Component\HttpFoundation\Response;
@@ -16,9 +18,9 @@ class Log implements Output
         //
     }
 
-    public function output(Collection $detectedQueries, Response $response): void
+    public function output(Collection $detectedQueries, Response $response, ?Request $request = null): void
     {
-        $this->log('Detected N+1 Query');
+        $this->log(RequestContext::formatLogHeader($request));
 
         foreach ($detectedQueries as $detectedQuery) {
             $logOutput = 'Model: '.$detectedQuery['model'].PHP_EOL;

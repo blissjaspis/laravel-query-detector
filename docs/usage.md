@@ -35,6 +35,8 @@ Example configuration:
 ],
 ```
 
+**Log output (HTTP)** — The first log line per batch includes the request method and URI, plus the route name when the route is named, for example: `Detected N+1 Query [GET /posts] (route: posts.index)`. Outside HTTP (Artisan, queue), the header stays `Detected N+1 Query`.
+
 ### Output per route
 
 Use `output` as the default. Override it for specific routes with `route_output` (URI patterns) or `route_names` (route name patterns). **First match wins** — put more specific rules first.
@@ -136,7 +138,7 @@ if ($detector->isEnabled()) {
 }
 ```
 
-Use this only in `local` / `staging`. The `$request` argument is unused internally; an empty `Response` is enough for Log and `QueryDetected` event output. On subsequent runs in the same PHP process, `boot()` resets collector state automatically.
+Use this only in `local` / `staging`. Pass the real `Request` when you want Log output to include HTTP context; otherwise an empty `Response` is enough for `QueryDetected` event output. On subsequent runs in the same PHP process, `boot()` resets collector state automatically.
 
 4. **Inspect results in code** — After `boot()` and your logic, call `$detector->getDetectedQueries()` and `dump()` / log in local env.
 

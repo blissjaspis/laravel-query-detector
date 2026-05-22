@@ -42,7 +42,7 @@ These are the main extension points for package consumers:
 - **Configuration** — `config/querydetector.php` (`enabled`, `threshold`, `except`, `output`, `route_output`, `route_names`, …)
 - **Per-route outputs** — `Support\OutputResolver` picks drivers by URI, route name, or `querydetector.output` middleware
 - **Event** — `Events\QueryDetected` for custom integrations (Sentry, Slack, etc.)
-- **Output drivers** — implement `Contracts\Output` and register the class in `output`
+- **Output drivers** — implement `Contracts\Output` (`output(Collection $queries, Response $response, ?Request $request = null)`) and register the class in `output`
 
 Internal classes (`QueryCollector`, `BacktraceParser`, etc.) are not part of the public API and may change without a major release.
 

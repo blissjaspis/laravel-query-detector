@@ -7,6 +7,7 @@ namespace BlissJaspis\QueryDetector\Outputs;
 use BlissJaspis\QueryDetector\Contracts\Output;
 use DebugBar\DataCollector\MessagesCollector;
 use Fruitcake\LaravelDebugbar\Facades\Debugbar as LaravelDebugbar;
+use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -23,7 +24,7 @@ class Debugbar implements Output
         }
     }
 
-    public function output(Collection $detectedQueries, Response $response): void
+    public function output(Collection $detectedQueries, Response $response, ?Request $request = null): void
     {
         foreach ($detectedQueries as $detectedQuery) {
             $this->collector->addMessage(sprintf(

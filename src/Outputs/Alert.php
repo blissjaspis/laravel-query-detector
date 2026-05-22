@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace BlissJaspis\QueryDetector\Outputs;
 
 use BlissJaspis\QueryDetector\Contracts\Output;
+use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -15,7 +16,7 @@ class Alert implements Output
         //
     }
 
-    public function output(Collection $detectedQueries, Response $response): void
+    public function output(Collection $detectedQueries, Response $response, ?Request $request = null): void
     {
         if (stripos($response->headers->get('Content-Type'), 'text/html') !== 0 || $response->isRedirection()) {
             return;

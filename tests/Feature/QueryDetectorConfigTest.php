@@ -10,7 +10,9 @@ use BlissJaspis\QueryDetector\Outputs\Json;
 use BlissJaspis\QueryDetector\Outputs\Log;
 use BlissJaspis\QueryDetector\QueryDetector;
 use BlissJaspis\QueryDetector\Tests\TestCase;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Routing\Route;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log as LogFacade;
 use Workbench\App\Models\Author;
@@ -92,6 +94,68 @@ class QueryDetectorConfigTest extends TestCase
             ->andReturnNull();
 
         $output->output($detectedQueries, new Response);
+    }
+
+    public function test_log_output_includes_http_request_context(): void
+    {
+        $output = new Log;
+
+        $detectedQueries = collect([
+            [
+                'count' => 2,
+                'time' => 1.5,
+                'query' => 'select * from profiles',
+                'model' => Author::class,
+                'relatedModel' => 'profile',
+                'relation' => 'profile',
+                'sources' => [
+                    ['index' => 0, 'name' => '/app/Http/Controllers/Example.php', 'line' => 10],
+                ],
+            ],
+        ]);
+
+        $request = Request::create('/n-plus-query', 'GET');
+        $route = new Route('GET', '/n-plus-query', []);
+        $route->name('workbench.n-plus-query');
+        $request->setRouteResolver(fn () => $route);
+
+        LogFacade::shouldReceive('channel')
+            ->with(config('querydetector.log_channel'))
+            ->andReturnSelf();
+
+        LogFacade::shouldReceive('info')
+            ->once()
+            ->with('Detected N+1 Query [GET /n-plus-query] (route: workbench.n-plus-query)')
+            ->andReturnNull();
+
+        LogFacade::shouldReceive('info')
+            ->once()
+            ->andReturnNull();
+
+        $output->output($detectedQueries, new Response, $request);
+    }
+
+    public function test_log_output_includes_http_context_during_request(): void
+    {
+        $this->app['config']->set('querydetector.output', [
+            Log::class,
+        ]);
+
+        $loggedMessages = [];
+
+        LogFacade::shouldReceive('channel')
+            ->with(config('querydetector.log_channel'))
+            ->andReturnSelf();
+
+        LogFacade::shouldReceive('info')
+            ->andReturnUsing(function (string $message) use (&$loggedMessages): void {
+                $loggedMessages[] = $message;
+            });
+
+        $this->get('/n-plus-query');
+
+        $this->assertNotEmpty($loggedMessages);
+        $this->assertStringContainsString('Detected N+1 Query [GET /n-plus-query]', $loggedMessages[0]);
     }
 
     public function test_json_output_adds_serializable_warning_queries(): void

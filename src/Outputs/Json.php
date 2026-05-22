@@ -6,6 +6,7 @@ namespace BlissJaspis\QueryDetector\Outputs;
 
 use BlissJaspis\QueryDetector\Contracts\Output;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -16,7 +17,7 @@ class Json implements Output
         //
     }
 
-    public function output(Collection $detectedQueries, Response $response): void
+    public function output(Collection $detectedQueries, Response $response, ?Request $request = null): void
     {
         if (! $response instanceof JsonResponse) {
             return;

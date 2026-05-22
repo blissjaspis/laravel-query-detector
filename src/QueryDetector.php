@@ -130,8 +130,10 @@ class QueryDetector
 
         $this->ensureOutputsBooted($outputTypes);
 
+        $httpRequest = $request instanceof Request ? $request : null;
+
         foreach ($outputTypes as $type) {
-            app($type)->output($detectedQueries, $response);
+            app($type)->output($detectedQueries, $response, $httpRequest);
         }
     }
 

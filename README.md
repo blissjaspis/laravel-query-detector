@@ -12,7 +12,7 @@ This repository is a fork of [beyondcode/laravel-query-detector](https://github.
 
 ### Version 2.x (current)
 
-Compatible with **Laravel 12 and above** (PHP 8.2+).
+Latest release: **2.1.0**. Compatible with **Laravel 12 and above** (PHP 8.2+).
 
 ### Version 1.x
 
