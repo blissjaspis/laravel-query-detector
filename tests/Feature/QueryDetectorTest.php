@@ -19,7 +19,7 @@ class QueryDetectorTest extends TestCase
         $this->get('/n-plus-query');
 
         $queries = app(QueryDetector::class)->getDetectedQueries();
-        
+
         $this->assertCount(1, $queries);
 
         $this->assertSame(Author::count(), $queries[0]['count']);

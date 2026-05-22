@@ -9,7 +9,6 @@ use BlissJaspis\QueryDetector\Tests\TestCase;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Support\Collection;
 use Workbench\App\Models\Author;
 use Workbench\App\Models\Profile;
 
