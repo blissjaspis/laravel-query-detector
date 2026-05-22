@@ -8,6 +8,7 @@ use BlissJaspis\QueryDetector\Analysis\BacktraceParser;
 use BlissJaspis\QueryDetector\Analysis\RelationResolver;
 use BlissJaspis\QueryDetector\Filtering\DetectedQueryFilter;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -28,34 +29,27 @@ class QueryCollector
 
     public function record(object $query, Collection $backtrace): void
     {
-        $modelTrace = $backtrace->first(function ($trace) {
-            return Arr::get($trace, 'object') instanceof Builder;
-        });
-
-        if ($modelTrace === null) {
+        if (! $this->backtraceContainsEloquentBuilder($backtrace)) {
             return;
         }
 
-        $relation = $backtrace->first(function ($trace) {
-            $object = Arr::get($trace, 'object');
+        $relationTrace = $this->findRelationTrace($backtrace);
 
-            return Arr::get($trace, 'function') === 'getRelationValue'
-                || $object instanceof Relation;
-        });
-
-        if (! is_array($relation) || ! isset($relation['object'])) {
+        if ($relationTrace === null) {
             return;
         }
 
-        if ($relation['object'] instanceof Relation) {
-            $relationObject = $relation['object'];
+        if ($relationTrace['object'] instanceof Relation) {
+            $relationObject = $relationTrace['object'];
             $model = $relationObject->getParent()::class;
             $relationName = $this->relationResolver->resolveRelationName($relationObject, $backtrace);
             $relatedModel = $relationObject->getRelated()::class;
         } else {
-            $model = get_class($relation['object']);
-            $relationName = $relation['args'][0];
-            $relatedModel = $this->relationResolver->resolveRelatedModelClass($relation['object'], $relationName) ?? $relationName;
+            /** @var Model $parentModel */
+            $parentModel = $relationTrace['object'];
+            $model = $parentModel::class;
+            $relationName = $relationTrace['args'][0];
+            $relatedModel = $this->relationResolver->resolveRelatedModelClass($parentModel, $relationName) ?? $relationName;
         }
 
         $sources = $this->backtraceParser->findSources($backtrace);
@@ -97,5 +91,54 @@ class QueryCollector
     {
         $this->queries = Collection::make();
         $this->detectedQueriesCache = null;
+    }
+
+    private function backtraceContainsEloquentBuilder(Collection $backtrace): bool
+    {
+        return $backtrace->contains(function ($trace) {
+            return Arr::get($trace, 'object') instanceof Builder;
+        });
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function findRelationTrace(Collection $backtrace): ?array
+    {
+        $relationTrace = $backtrace->first(function ($trace) {
+            return Arr::get($trace, 'object') instanceof Relation;
+        });
+
+        if (is_array($relationTrace)) {
+            return $relationTrace;
+        }
+
+        $relationTrace = $backtrace->first(function ($trace) {
+            return is_array($trace) && $this->isGetRelationValueTrace($trace);
+        });
+
+        return is_array($relationTrace) ? $relationTrace : null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $trace
+     */
+    private function isGetRelationValueTrace(array $trace): bool
+    {
+        if (Arr::get($trace, 'function') !== 'getRelationValue') {
+            return false;
+        }
+
+        $object = Arr::get($trace, 'object');
+
+        if (! $object instanceof Model) {
+            return false;
+        }
+
+        $relationName = Arr::get($trace, 'args.0');
+
+        return is_string($relationName)
+            && $relationName !== ''
+            && $relationName !== 'loadMissing';
     }
 }
