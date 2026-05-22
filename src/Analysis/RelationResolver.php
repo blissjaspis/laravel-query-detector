@@ -7,7 +7,6 @@ namespace BlissJaspis\QueryDetector\Analysis;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
-use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -162,8 +161,7 @@ class RelationResolver
 
         if ($relationObject instanceof HasMany
             || $relationObject instanceof BelongsToMany
-            || $relationObject instanceof MorphMany
-            || $relationObject instanceof MorphToMany) {
+            || $relationObject instanceof MorphMany) {
             return Str::plural($snake);
         }
 
